@@ -24,6 +24,7 @@ func (se *suiteExecution) processOperationGroup(op operationGroup) {
 	l := se.logger
 	se.configuration.T.Run(op.groupName, func(t *testing.T) {
 		if len(op.operations) > 0 {
+			t.Parallel()
 			l.Infof(op.groupTemplate, op.num, len(op.operations))
 			for i, operation := range op.operations {
 				l.Infof(op.elementTemplate, op.num, i+1, operation.Name())

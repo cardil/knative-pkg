@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Knative Authors
+Copyright 2021 The Knative Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -65,13 +65,17 @@ func TestStepsCanRunInParallel(t *testing.T) {
 func op(num int, s *state) upgrade.Operation {
 	return upgrade.NewOperation(fmt.Sprint("op", num), func(c upgrade.Context) {
 		c.T.Parallel()
-		s.ready++
+		s.ready <- num
 		step := time.Millisecond * 2
 		loop := func() {
 			s.add(num)
 			time.Sleep(step)
 		}
-		for s.ready < 3 {
+		for {
+			select {
+			case <-s.ready:
+
+			}
 			loop()
 		}
 		cooldown := time.Second
@@ -84,9 +88,13 @@ func op(num int, s *state) upgrade.Operation {
 
 type state struct {
 	numbers []int
-	ready   int
+	ready   chan<- int
 }
 
 func (s *state) add(num int) {
 	s.numbers = append(s.numbers, num)
+}
+
+func (s *state) isReady() bool {
+
 }
