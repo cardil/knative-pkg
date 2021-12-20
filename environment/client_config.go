@@ -36,7 +36,17 @@ type ClientConfig struct {
 	Kubeconfig string  // Kubeconfig - Path to a kubeconfig. Current casing is present for backwards compatibility
 }
 
-func (c *ClientConfig) InitFlags(fs *flag.FlagSet) {
+// FlagSet is required by ClientConfig.InitFlags func. This is part of the
+// flag.FlagSet interface
+type FlagSet interface {
+	StringVar(p *string, name string, value string, usage string)
+	IntVar(p *int, name string, value int, usage string)
+	Float64Var(p *float64, name string, value float64, usage string)
+	VisitAll(fn func(*flag.Flag))
+}
+
+func (c *ClientConfig) InitFlags(fs FlagSet) {
+	fs = dontReconfigureFlags{fs}
 	fs.StringVar(&c.Cluster, "cluster", "", "Defaults to the current cluster in kubeconfig.")
 
 	fs.StringVar(&c.ServerURL, "server", "",
@@ -83,4 +93,43 @@ func (c *ClientConfig) GetRESTConfig() (*rest.Config, error) {
 	config.Burst = c.Burst
 
 	return config, nil
+}
+
+type dontReconfigureFlags struct {
+	delegate FlagSet
+}
+
+func (d dontReconfigureFlags) StringVar(p *string, name string, value string, usage string) {
+	if d.isDefined(name) {
+		return
+	}
+	d.delegate.StringVar(p, name, value, usage)
+}
+
+func (d dontReconfigureFlags) IntVar(p *int, name string, value int, usage string) {
+	if d.isDefined(name) {
+		return
+	}
+	d.delegate.IntVar(p, name, value, usage)
+}
+
+func (d dontReconfigureFlags) Float64Var(p *float64, name string, value float64, usage string) {
+	if d.isDefined(name) {
+		return
+	}
+	d.delegate.Float64Var(p, name, value, usage)
+}
+
+func (d dontReconfigureFlags) VisitAll(fn func(*flag.Flag)) {
+	d.delegate.VisitAll(fn)
+}
+
+func (d dontReconfigureFlags) isDefined(name string) bool {
+	defined := false
+	d.VisitAll(func(f *flag.Flag) {
+		if f.Name == name {
+			defined = true
+		}
+	})
+	return defined
 }
