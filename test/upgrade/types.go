@@ -77,7 +77,7 @@ type BackgroundOperation interface {
 // for error reporting and zap.SugaredLogger for unbuffered logging.
 type Context struct {
 	T   *testing.T
-	Log *zap.SugaredLogger
+	Log Logger
 }
 
 // BackgroundContext is a upgrade test execution context that will be passed
@@ -87,7 +87,7 @@ type Context struct {
 // necessary. The logs are stored in a threadSafeBuffer and flushed to the test
 // output when the test fails.
 type BackgroundContext struct {
-	Log       *zap.SugaredLogger
+	Log       Logger
 	Stop      <-chan StopEvent
 	logBuffer *threadSafeBuffer
 }
@@ -100,7 +100,7 @@ type StopEvent struct {
 	T        *testing.T
 	Finished chan<- struct{}
 	name     string
-	logger   *zap.SugaredLogger
+	logger   Logger
 }
 
 // WaitForStopEventConfiguration holds a values to be used be WaitForStopEvent
@@ -127,7 +127,7 @@ type Configuration struct {
 // This is for backwards compatibility.
 func (c Configuration) logConfig() LogConfig {
 	if c.Log != nil {
-		c.LogConfig = LogConfig{Config: zap.NewDevelopmentConfig()}
+		c.LogConfig = LogConfig{}
 	}
 	return c.LogConfig
 }
@@ -136,8 +136,6 @@ func (c Configuration) logConfig() LogConfig {
 // logger configuration and also a custom function for building the resulting
 // logger.
 type LogConfig struct {
-	// Config from which the zap.Logger be created.
-	Config zap.Config
 	// Options holds options for the zap.Logger.
 	Options []zap.Option
 }

@@ -22,10 +22,7 @@ import (
 
 func (se *suiteExecution) processOperationGroup(op operationGroup) {
 	se.configuration.T.Run(op.groupName, func(t *testing.T) {
-		l, err := se.configuration.logger(t)
-		if err != nil {
-			t.Fatal(err)
-		}
+		l := se.configuration.logger(t)
 		if len(op.operations) > 0 {
 			l.Infof(op.groupTemplate, op.num, len(op.operations))
 			for i, operation := range op.operations {
@@ -36,10 +33,7 @@ func (se *suiteExecution) processOperationGroup(op operationGroup) {
 				}
 				handler := operation.Handler()
 				t.Run(operation.Name(), func(t *testing.T) {
-					l, err = se.configuration.logger(t)
-					if err != nil {
-						t.Fatal(err)
-					}
+					l = se.configuration.logger(t)
 					handler(Context{T: t, Log: l})
 				})
 				se.failed = se.failed || t.Failed()

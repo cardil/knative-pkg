@@ -52,10 +52,7 @@ func (se *suiteExecution) startContinualTests(num int) {
 	elementTemplate := `%d.%d) Starting continual tests of "%s".`
 	numOps := len(operations)
 	se.configuration.T.Run("ContinualTests", func(t *testing.T) {
-		l, err := se.configuration.logger(t)
-		if err != nil {
-			t.Fatal(err)
-		}
+		l := se.configuration.logger(t)
 		if numOps > 0 {
 			l.Infof(groupTemplate, num, numOps)
 			for i := range operations {
@@ -69,10 +66,7 @@ func (se *suiteExecution) startContinualTests(num int) {
 
 				logger, buffer := newInMemoryLoggerBuffer(se.configuration)
 				t.Run("Setup"+operation.Name(), func(t *testing.T) {
-					l, err = se.configuration.logger(t)
-					if err != nil {
-						t.Fatal(err)
-					}
+					l = se.configuration.logger(t)
 					setup(Context{T: t, Log: logger.Sugar()})
 				})
 
@@ -102,17 +96,11 @@ func (se *suiteExecution) verifyContinualTests(num int) {
 	testsCount := len(se.suite.tests.continual)
 	if testsCount > 0 {
 		se.configuration.T.Run("VerifyContinualTests", func(t *testing.T) {
-			l, err := se.configuration.logger(t)
-			if err != nil {
-				t.Fatal(err)
-			}
+			l := se.configuration.logger(t)
 			l.Infof("%d) ✋ Verifying %d running continual tests.", num, testsCount)
 			for i, operation := range se.suite.tests.continual {
 				t.Run(operation.Name(), func(t *testing.T) {
-					l, err = se.configuration.logger(t)
-					if err != nil {
-						t.Fatal(err)
-					}
+					l = se.configuration.logger(t)
 					l.Infof(`%d.%d) Verifying "%s".`, num, i+1, operation.Name())
 					finished := make(chan struct{})
 					operation.stop <- StopEvent{

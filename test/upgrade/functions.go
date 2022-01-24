@@ -28,11 +28,7 @@ import (
 
 // Execute the Suite of upgrade tests with a Configuration given.
 func (s *Suite) Execute(c Configuration) {
-	l, err := c.logger(c.T)
-	if err != nil {
-		c.T.Fatal("Failed to build logger:", err)
-		return
-	}
+	l := c.logger(c.T)
 	se := suiteExecution{
 		suite:         enrichSuite(s),
 		configuration: c,
@@ -203,24 +199,16 @@ func newInMemoryLoggerBuffer(config Configuration) (*zap.Logger, *threadSafeBuff
 	logConfig := config.logConfig()
 	buf := &threadSafeBuffer{}
 	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(logConfig.Config.EncoderConfig),
+		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
 		zapcore.AddSync(buf),
-		logConfig.Config.Level)
+		zap.NewAtomicLevelAt(zap.DebugLevel),
+	)
 
-	var opts []zap.Option
-	if logConfig.Config.Development {
-		opts = append(opts, zap.Development())
-	}
-	if !logConfig.Config.DisableCaller {
-		opts = append(opts, zap.AddCaller())
-	}
-	stackLevel := zap.ErrorLevel
-	if logConfig.Config.Development {
-		stackLevel = zap.WarnLevel
-	}
-	if !logConfig.Config.DisableStacktrace {
-		opts = append(opts, zap.AddStacktrace(stackLevel))
-	}
+	opts := append([]zap.Option{
+		zap.Development(),
+		zap.AddCaller(),
+		zap.AddStacktrace(zap.WarnLevel),
+	}, logConfig.Options...)
 	return zap.New(core, opts...), buf
 }
 
