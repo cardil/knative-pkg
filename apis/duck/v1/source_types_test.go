@@ -35,20 +35,26 @@ func TestSourceValidate(t *testing.T) {
 	}, {
 		name: "nil source spec validation",
 		src:  &Source{},
-		want: nil,
+		want: apis.ErrGeneric("expected at least one, got none", "spec.sink.ref", "spec.sink.uri"),
 	}, {
 		name: "empty source spec validation",
 		src:  &Source{Spec: SourceSpec{}},
-		want: nil,
+		want: apis.ErrGeneric("expected at least one, got none", "spec.sink.ref", "spec.sink.uri"),
 	}, {
 		name: "empty source ceOverrides extensions validation",
 		src: &Source{Spec: SourceSpec{
+			Sink: Destination{
+				URI: apis.HTTP("localhost"),
+			},
 			CloudEventOverrides: &CloudEventOverrides{Extensions: map[string]string{}},
 		}},
 		want: nil,
 	}, {
 		name: "empty extension name error",
 		src: &Source{Spec: SourceSpec{
+			Sink: Destination{
+				URI: apis.HTTP("localhost"),
+			},
 			CloudEventOverrides: &CloudEventOverrides{Extensions: map[string]string{"": "test"}},
 		}},
 		want: apis.ErrInvalidKeyName(
@@ -59,6 +65,9 @@ func TestSourceValidate(t *testing.T) {
 	}, {
 		name: "long extension key name is valid",
 		src: &Source{Spec: SourceSpec{
+			Sink: Destination{
+				URI: apis.HTTP("localhost"),
+			},
 			CloudEventOverrides: &CloudEventOverrides{
 				Extensions: map[string]string{"nameLongerThan20Characters": "test"},
 			},
@@ -67,6 +76,9 @@ func TestSourceValidate(t *testing.T) {
 	}, {
 		name: "invalid extension name",
 		src: &Source{Spec: SourceSpec{
+			Sink: Destination{
+				URI: apis.HTTP("localhost"),
+			},
 			CloudEventOverrides: &CloudEventOverrides{Extensions: map[string]string{"invalid_name": "test"}},
 		}},
 		want: apis.ErrInvalidKeyName(
@@ -77,6 +89,9 @@ func TestSourceValidate(t *testing.T) {
 	}, {
 		name: "valid extension name",
 		src: &Source{Spec: SourceSpec{
+			Sink: Destination{
+				URI: apis.HTTP("localhost"),
+			},
 			CloudEventOverrides: &CloudEventOverrides{
 				Extensions: map[string]string{"validName": "test"},
 			},
