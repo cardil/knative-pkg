@@ -123,13 +123,16 @@ type Configuration struct {
 	LogConfig
 }
 
-func (c Configuration) logConfig() LogConfig {
-	cfg := c.LogConfig
-	if cfg.Config == nil {
-		zc := zap.NewDevelopmentConfig()
-		cfg.Config = &zc
+func (c Configuration) logConfig() resolvedLogConfig {
+	zc := zap.NewDevelopmentConfig()
+	if c.LogConfig.Config != nil {
+		zc = *c.LogConfig.Config
 	}
-	return cfg
+	opts := make([]zap.Option, 0, len(c.LogConfig.Options))
+	return resolvedLogConfig{
+		Config:  zc,
+		Options: append(opts, c.LogConfig.Options...),
+	}
 }
 
 // LogConfig holds the logger configuration. It allows for passing just the
@@ -145,4 +148,9 @@ type LogConfig struct {
 // SuiteExecutor is to execute upgrade test suite.
 type SuiteExecutor interface {
 	Execute(c Configuration)
+}
+
+type resolvedLogConfig struct {
+	zap.Config
+	Options []zap.Option
 }
