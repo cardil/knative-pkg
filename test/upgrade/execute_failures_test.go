@@ -22,6 +22,7 @@ import (
 	"os"
 	"testing"
 
+	"go.uber.org/zap"
 	"knative.dev/pkg/test/upgrade"
 )
 
@@ -43,11 +44,6 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 	testName := fmt.Sprintf("FailAt-%d-%d", fp.step, fp.element)
 	t.Run(testName, func(t *testing.T) {
 		assert := assertions{tb: t}
-		var (
-			output string
-			c      upgrade.Configuration
-			buf    fmt.Stringer
-		)
 		suite := completeSuiteExample(fp)
 		txt := expectedTexts(suite, fp)
 		txt.append(upgradeTestRunning, upgradeTestFailure)
@@ -55,26 +51,26 @@ func testSuiteExecuteWithFailingStep(fp failurePoint, t *testing.T) {
 		it := []testing.InternalTest{{
 			Name: testName,
 			F: func(t *testing.T) {
-				c, buf = newConfig(t)
-				suite.Execute(c)
+				cfg := zap.NewDevelopmentConfig()
+				suite.Execute(upgrade.Configuration{
+					T: t,
+					LogConfig: upgrade.LogConfig{
+						Config: &cfg,
+					},
+				})
 			},
 		}}
 		var ok bool
 		testOutput := captureStdOutput(func() {
 			ok = testing.RunTests(allTestsFilter, it)
 		})
-		output = buf.String()
 
 		if ok {
 			t.Fatal("Didn't fail, but should")
 		}
 
-		assert.textContains(output, txt)
-		assert.textContains(testOutput, texts{
-			elms: []string{
-				fmt.Sprintf("--- FAIL: FailAt-%d-%d", fp.step, fp.element),
-			},
-		})
+		txt.append(fmt.Sprintf("--- FAIL: FailAt-%d-%d ", fp.step, fp.element))
+		assert.textContains(testOutput, txt)
 	})
 }
 

@@ -24,7 +24,8 @@ type failurePoint struct {
 }
 
 type texts struct {
-	elms []string
+	elms                 []string
+	dontFailOnDuplicates bool
 }
 
 type messageFormatter func(args ...interface{}) string

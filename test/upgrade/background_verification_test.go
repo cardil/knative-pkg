@@ -18,7 +18,6 @@ package upgrade_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	"knative.dev/pkg/test/upgrade"
@@ -34,7 +33,7 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 	doneCh := make(chan struct{})
 	beforeVerifyCh := make(chan struct{})
 	inVerifyCh := make(chan struct{})
-	expectedTexts := []string{
+	expected := []string{
 		upgradeTestRunning,
 		"DEBUG\tFinished \"ShouldBeSkipped\"",
 		"DEBUG\tFinished \"ShouldNotBeSkipped\"",
@@ -56,7 +55,7 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 							for i := 0; i < bgMessages; i++ {
 								msg := fmt.Sprintf("BeforeVerify %d", i)
 								c.Log.Info(msg)
-								expectedTexts = append(expectedTexts, msg)
+								expected = append(expected, msg)
 							}
 							close(beforeVerifyCh)
 							<-inVerifyCh
@@ -64,7 +63,7 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 							for i := 0; i < bgMessages; i++ {
 								msg := fmt.Sprintf("InVerify %d", i)
 								c.Log.Info(msg)
-								expectedTexts = append(expectedTexts, msg)
+								expected = append(expected, msg)
 							}
 							close(doneCh)
 						}()
@@ -98,19 +97,16 @@ func TestSkipAtBackgroundVerification(t *testing.T) {
 	assert.textNotContains(out, texts{elms: []string{
 		"INFO\tVerify 1",
 	}})
-	assert.textContains(out, texts{elms: expectedTexts})
-	verifyBackgroundLogs(t, out)
+	assert.textContains(out, texts{elms: expected})
+	verifyBackgroundLogs(assert, out)
 }
 
-func verifyBackgroundLogs(t *testing.T, logs string) {
-	t.Helper()
-	for _, line := range strings.Split(logs, "\n") {
-		if (strings.Contains(line, "BeforeVerify") ||
-			strings.Contains(line, "InVerify")) &&
-			!strings.Contains(line, "⏳") {
-			t.Fatalf("Message was not logged by background logger: %q", line)
-		}
-	}
+func verifyBackgroundLogs(assert assertions, logs string) {
+	assert.textContains(logs, texts{dontFailOnDuplicates: true, elms: []string{
+		"BeforeVerify",
+		"InVerify",
+		"⏳",
+	}})
 }
 
 func TestFailAtBackgroundVerification(t *testing.T) {
@@ -118,7 +114,7 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 	beforeVerifyCh := make(chan struct{})
 	inVerifyCh := make(chan struct{})
 	const failingVerification = "FailAtVerification"
-	expectedTexts := []string{
+	expected := []string{
 		upgradeTestRunning,
 		fmt.Sprintf("DEBUG\tFinished %q", failingVerification),
 		upgradeTestFailure,
@@ -137,7 +133,7 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 							for i := 0; i < bgMessages; i++ {
 								msg := fmt.Sprintf("BeforeVerify %d", i)
 								c.Log.Info(msg)
-								expectedTexts = append(expectedTexts, msg)
+								expected = append(expected, msg)
 							}
 							close(beforeVerifyCh)
 							<-inVerifyCh
@@ -145,7 +141,7 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 							for i := 0; i < bgMessages; i++ {
 								msg := fmt.Sprintf("InVerify %d", i)
 								c.Log.Info(msg)
-								expectedTexts = append(expectedTexts, msg)
+								expected = append(expected, msg)
 							}
 							close(doneCh)
 						}()
@@ -186,11 +182,11 @@ func TestFailAtBackgroundVerification(t *testing.T) {
 	assert.textNotContains(out, texts{elms: []string{
 		"INFO\tVerify 2",
 	}})
-	assert.textContains(out, texts{elms: expectedTexts})
+	assert.textContains(out, texts{elms: expected})
 	assert.textContains(testOutput, texts{
 		elms: []string{
 			fmt.Sprintf("--- FAIL: %s/VerifyContinualTests/%s", t.Name(), failingVerification),
 		},
 	})
-	verifyBackgroundLogs(t, out)
+	verifyBackgroundLogs(assert, out)
 }

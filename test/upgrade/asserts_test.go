@@ -29,11 +29,22 @@ type assertions struct {
 func (a assertions) textContains(haystack string, needles texts) {
 	a.tb.Helper()
 	for _, needle := range needles.elms {
-		if !strings.Contains(haystack, needle) {
+		c := strings.Count(haystack, needle)
+		switch c {
+		case 0:
 			a.tb.Fatalf(
 				"expected %#v is not in: %v",
 				needle, haystack,
 			)
+		case 1:
+			return
+		default:
+			if !needles.dontFailOnDuplicates {
+				a.tb.Fatalf(
+					"expected %#v to many times (%d) in: %v",
+					needle, c, haystack,
+				)
+			}
 		}
 	}
 }
